@@ -50,11 +50,17 @@ export type IPatch = ParagraphPatch | FilePatch;
 
 export type PatchDocumentOutputType = OutputType;
 
+export type PatchDocumentPatternOption = {
+    readonly start: string
+    readonly end: string
+}
+
 export type PatchDocumentOptions<T extends PatchDocumentOutputType = PatchDocumentOutputType> = {
     readonly outputType: T;
     readonly data: InputDataType;
     readonly patches: Readonly<Record<string, IPatch>>;
     readonly keepOriginalStyles?: boolean;
+    readonly pattern?: PatchDocumentPatternOption;
 };
 
 const imageReplacer = new ImageReplacer();
@@ -64,6 +70,7 @@ export const patchDocument = async <T extends PatchDocumentOutputType = PatchDoc
     data,
     patches,
     keepOriginalStyles,
+    pattern
 }: PatchDocumentOptions<T>): Promise<OutputByType[T]> => {
     const zipContent = await JSZip.loadAsync(data);
     const contexts = new Map<string, IContext>();
@@ -133,7 +140,7 @@ export const patchDocument = async <T extends PatchDocumentOutputType = PatchDoc
             contexts.set(key, context);
 
             for (const [patchKey, patchValue] of Object.entries(patches)) {
-                const patchText = `{{${patchKey}}}`;
+                const patchText = `${pattern?.start || '{{'}${patchKey}${pattern?.end || '}}'}`;
                 // TODO: mutates json. Make it immutable
                 // We need to loop through to catch every occurrence of the patch text
                 // It is possible that the patch text is in the same run
